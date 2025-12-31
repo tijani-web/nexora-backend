@@ -24,9 +24,6 @@ router.get('/paginated', getPaginatedQuestions);
 // @desc Get trending questions
 router.get('/trending', getTrendingQuestions);
 
-// @desc Get a single question by ID or slug (UPDATED)
-router.get('/:identifier', getQuestionByIdOrSlug);
-
 // @desc Get question by ID only (backward compatibility)
 router.get('/id/:id', getSingleQuestion);
 
@@ -38,6 +35,10 @@ router.put('/:id', protect, updateQuestion);
 
 // @desc Delete a question (Protected) - still uses ID
 router.delete('/:id', protect, deleteQuestion);
+
+// @desc Get a single question by ID or slug (UPDATED)
+router.get('/:identifier', getQuestionByIdOrSlug);
+
 
 // @desc Increment views count for a question - works with both ID and slug
 router.post('/:identifier/views', async (req, res) => {
