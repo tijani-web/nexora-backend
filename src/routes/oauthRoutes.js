@@ -28,7 +28,7 @@ router.get(
     const token = generateToken(req.user);
     
     // Redirect to frontend with token and user data
-    res.redirect(`http://localhost:3000/auth/success?token=${token}&user=${encodeURIComponent(JSON.stringify(req.user))}`);
+    res.redirect(`${process.env.FRONT_END_URL}/auth/success?token=${token}&user=${encodeURIComponent(JSON.stringify(req.user))}`);
   }
 );
 
@@ -46,7 +46,7 @@ router.get(
     const token = generateToken(req.user);
     
     // Redirect to frontend with token and user data
-    res.redirect(`http://localhost:3000/auth/success?token=${token}&user=${encodeURIComponent(JSON.stringify(req.user))}`);
+    res.redirect(`${process.env.FRONT_END_URL}/auth/success?token=${token}&user=${encodeURIComponent(JSON.stringify(req.user))}`);
   }
 );
 
