@@ -1,3 +1,4 @@
+// userRoutes.js - FIXED VERSION
 import express from 'express';
 import {
   getMe,
@@ -11,7 +12,8 @@ import {
   getPublicUsers,
   getUserSettings,
   updateUserSettings,
-  getUserByIdOrSlug 
+  getUserByIdOrSlug,
+  checkUserData
 } from '../controllers/userController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 
@@ -24,20 +26,17 @@ router.get('/me', protect, getMe);
 router.get('/settings', protect, getUserSettings);
 router.put('/settings', protect, updateUserSettings);
 
+// ✅ FIXED: Specific routes FIRST
+router.get('/:userId/check-data', checkUserData);
+router.get('/:userId/questions', getUserQuestions);      
+router.get('/:userId/answers', getUserAnswers);          
+router.get('/:userId/stats', getUserStats);              
+
 // Single user by ID or slug 
-router.get('/:identifier', protect, getUserByIdOrSlug);
+router.get('/:identifier', protect, getUserByIdOrSlug);  
 
 // Single user by ID only 
 router.get('/id/:id', protect, getUser);
-
-// Get user questions 
-router.get('/:identifier/questions', getUserQuestions);
-
-// Get user answers  
-router.get('/:identifier/answers', getUserAnswers);
-
-// Get user stats 
-router.get('/:identifier/stats', getUserStats);
 
 // Get public users for mentions
 router.get('/public/list', getPublicUsers);

@@ -6,8 +6,8 @@ const router = express.Router();
 
 router.get('/debug-models', async (req, res) => {
   try {
-    console.log('🔑 API Key present:', !!process.env.GEMINI_API_KEY);
-    console.log('🔑 Key starts with:', process.env.GEMINI_API_KEY?.substring(0, 10) + '...');
+    // console.log('🔑 API Key present:', !!process.env.GEMINI_API_KEY);
+    // console.log('🔑 Key starts with:', process.env.GEMINI_API_KEY?.substring(0, 10) + '...');
     
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     

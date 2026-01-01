@@ -6,7 +6,7 @@ import { createActivity, ActivityType } from '../models/activityModel.js';
 export class ActivityService {
   static async recordQuestionAsked(user_id, question) {
     try {
-      console.log('🎯 Recording question activity for user:', user_id);
+      // console.log('🎯 Recording question activity for user:', user_id);
       return await createActivity({
         user_id,
         type: ActivityType.QUESTION_ASKED,
@@ -47,7 +47,7 @@ export class ActivityService {
 
   static async recordAnswerAccepted(user_id, answer, question) {
     try {
-      console.log('🎯 Recording answer accepted activity for user:', user_id);
+      // console.log('🎯 Recording answer accepted activity for user:', user_id);
       return await createActivity({
         user_id,
         type: ActivityType.ANSWER_ACCEPTED,

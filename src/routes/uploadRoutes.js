@@ -26,11 +26,11 @@ router.post('/', upload.single('image'), (req, res) => {
       });
     }
 
-    console.log('📁 File info:', {
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size
-    });
+    // console.log('📁 File info:', {
+    //   originalname: req.file.originalname,
+    //   mimetype: req.file.mimetype,
+    //   size: req.file.size
+    // });
 
     // For now, return a placeholder image URL
     // In production, you'd save the file and return a real URL

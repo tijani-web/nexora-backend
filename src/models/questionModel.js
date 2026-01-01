@@ -1,6 +1,6 @@
 import pool from '../config/db.js';
 
-// ✅ Get all questions WITH TAGS
+// ✅ Get all questions WITH TAGS 
 export const getAllQuestionsFromDB = async () => {
   const result = await pool.query(`
     SELECT 
@@ -14,7 +14,7 @@ export const getAllQuestionsFromDB = async () => {
         ELSE 0 END), 0) AS votes_count,
       ARRAY_AGG(DISTINCT t.name) FILTER (WHERE t.name IS NOT NULL) AS tags
     FROM questions q
-    LEFT JOIN users u ON q.author_id = u.id
+    LEFT JOIN users u ON q.author_id = u.id  
     LEFT JOIN answers a ON a.question_id = q.id
     LEFT JOIN votes v ON v.answer_id = a.id
     LEFT JOIN question_tags qt ON qt.question_id = q.id
@@ -25,8 +25,7 @@ export const getAllQuestionsFromDB = async () => {
   return result.rows;
 };
 
-
-// ✅ Get paginated questions WITH TAGS
+//  Get paginated questions WITH TAGS 
 export const getPaginatedQuestionsFromDB = async (page = 1, limit = 10) => {
   const offset = (page - 1) * limit;
   
@@ -42,7 +41,7 @@ export const getPaginatedQuestionsFromDB = async (page = 1, limit = 10) => {
         ELSE 0 END), 0) AS votes_count,
       ARRAY_AGG(DISTINCT t.name) FILTER (WHERE t.name IS NOT NULL) AS tags
     FROM questions q
-    LEFT JOIN users u ON q.author_id = u.id
+    LEFT JOIN users u ON q.author_id = u.id 
     LEFT JOIN answers a ON a.question_id = q.id
     LEFT JOIN votes v ON v.answer_id = a.id
     LEFT JOIN question_tags qt ON qt.question_id = q.id
@@ -54,7 +53,7 @@ export const getPaginatedQuestionsFromDB = async (page = 1, limit = 10) => {
   return result.rows;
 };
 
-// ✅ Get single question WITH TAGS
+// Get single question WITH TAGS 
 export const getQuestionById = async (id) => {
   const result = await pool.query(`
     SELECT 
@@ -68,7 +67,7 @@ export const getQuestionById = async (id) => {
         ELSE 0 END), 0) AS votes_count,
       ARRAY_AGG(DISTINCT t.name) FILTER (WHERE t.name IS NOT NULL) AS tags
     FROM questions q
-    LEFT JOIN users u ON q.author_id = u.id
+    LEFT JOIN users u ON q.author_id = u.id 
     LEFT JOIN answers a ON a.question_id = q.id
     LEFT JOIN votes v ON v.answer_id = a.id
     LEFT JOIN question_tags qt ON qt.question_id = q.id
@@ -79,16 +78,16 @@ export const getQuestionById = async (id) => {
   return result.rows[0];
 };
 
-// ✅ Create new question WITH TAGS
+//  Create new question WITH TAGS 
 export const createQuestionInDB = async (user_id, title, body, image_url, tags = []) => {
   const client = await pool.connect();
   
   try {
     await client.query('BEGIN');
 
-    // 1. Insert question
+    // 1. Insert question - CHANGE TO author_id
     const questionResult = await client.query(
-      `INSERT INTO questions (author_id, title, body, image_url)
+      `INSERT INTO questions (author_id, title, body, image_url)  
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
       [user_id, title, body, image_url]
@@ -136,8 +135,7 @@ export const createQuestionInDB = async (user_id, title, body, image_url, tags =
   }
 };
 
-
-// ✅ Get trending questions
+//  Get trending questions 
 export const getTrendingQuestionsFromDB = async (timeFilter = 'week') => {
   let timeWhere = '';
   const now = new Date();
@@ -179,7 +177,7 @@ export const getTrendingQuestionsFromDB = async (timeFilter = 'week') => {
         (CASE WHEN q.created_at >= CURRENT_DATE - INTERVAL '7 days' THEN 5 ELSE 0 END)
       ) AS trending_score
     FROM questions q
-    LEFT JOIN users u ON q.author_id = u.id
+    LEFT JOIN users u ON q.author_id = u.id  
     LEFT JOIN answers a ON a.question_id = q.id
     LEFT JOIN votes v ON v.answer_id = a.id
     LEFT JOIN question_tags qt ON qt.question_id = q.id
@@ -192,7 +190,7 @@ export const getTrendingQuestionsFromDB = async (timeFilter = 'week') => {
   return result.rows;
 };
 
-// ✅ Update a question
+// Update a question - NO CHANGE NEEDED
 export const updateQuestionInDB = async (id, title, body, image_url) => {
   const result = await pool.query(
     `UPDATE questions
@@ -207,7 +205,7 @@ export const updateQuestionInDB = async (id, title, body, image_url) => {
   return result.rows[0];
 };
 
-// ✅ Delete question
+// Delete question - NO CHANGE NEEDED
 export const deleteQuestionInDB = async (id) => {
   await pool.query(`DELETE FROM questions WHERE id = $1`, [id]);
   return { message: 'Question deleted successfully' };

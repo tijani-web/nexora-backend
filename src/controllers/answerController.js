@@ -53,15 +53,15 @@ export const createAnswer = async (req, res) => {
     const { body, image_url } = req.body;
     const userId = req.user?.id;
 
-    console.log('🔍 CREATE ANSWER DEBUG:');
-    console.log('🔍 Question ID:', questionId);
-    console.log('🔍 User ID:', userId);
+    // console.log('🔍 CREATE ANSWER DEBUG:');
+    // console.log('🔍 Question ID:', questionId);
+    // console.log('🔍 User ID:', userId);
 
     if (!body) return res.status(400).json({ message: "Answer body is required" });
 
     // Create answer
     const newAnswer = await createAnswerInDB(questionId, userId, body, image_url);
-    console.log('🔍 Answer created:', newAnswer.id);
+    // console.log('🔍 Answer created:', newAnswer.id);
     
     // Get the question first before recording activity
     const question = await getQuestionById(questionId);
@@ -69,34 +69,34 @@ export const createAnswer = async (req, res) => {
       return res.status(404).json({ message: "Question not found" });
     }
     
-    console.log('🔍 Question found - Owner:', question.author_id);
-    console.log('🔍 Answer Author:', userId);
-    console.log('🔍 Same user?', question.author_id === userId);
+    // console.log('🔍 Question found - Owner:', question.author_id);
+    // console.log('🔍 Answer Author:', userId);
+    // console.log('🔍 Same user?', question.author_id === userId);
     
     // Now record the activity
     await ActivityService.recordAnswerPosted(userId, newAnswer, question);
     
     // ✅ NOTIFY QUESTION OWNER (if not answering own question)
     if (question.author_id !== userId) {
-      console.log('🔔 SHOULD NOTIFY QUESTION OWNER');
+      // console.log('🔔 SHOULD NOTIFY QUESTION OWNER');
       
       const answerAuthor = await findById(userId);
-      console.log('🔔 Answer author found:', answerAuthor);
+      // console.log('🔔 Answer author found:', answerAuthor);
       
       if (answerAuthor) {
-        console.log('🔔 Sending notification to question owner:', question.author_id);
+        // console.log('🔔 Sending notification to question owner:', question.author_id);
         await NotificationService.notifyAnswerPosted(
           question.author_id, 
           newAnswer, 
           question, 
           answerAuthor
         );
-        console.log('🔔 Notification sent!');
+        console.log(' Notification sent!');
       } else {
-        console.log('❌ Answer author not found');
+        console.log(' Answer author not found');
       }
     } else {
-      console.log('🔕 Skipping notification - answering own question');
+      console.log(' Skipping notification - answering own question');
     }
     
     // Update question's answers_count (+1)

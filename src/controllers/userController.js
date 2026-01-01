@@ -132,43 +132,72 @@ export const getPublicUsers = async (req, res) => {
   }
 };
 
-// 🆕 Get user's questions
+//  Get user's questions
 export const getUserQuestions = async (req, res) => {
   try {
     const { userId } = req.params;
+    
+    // console.log('🔍 getUserQuestions for user:', userId);
     
     const questions = await pool.query(`
       SELECT 
         q.*,
         u.name AS author_name,
         u.avatar_url AS avatar_url,
-        COUNT(DISTINCT a.id) AS answers_count,
-        COALESCE(SUM(CASE 
-          WHEN v.vote_type = 'upvote' THEN 1 
-          WHEN v.vote_type = 'downvote' THEN -1 
-          ELSE 0 END), 0) AS votes_count,
-        ARRAY_AGG(DISTINCT t.name) FILTER (WHERE t.name IS NOT NULL) AS tags
+        COALESCE(answer_counts.answers_count, 0) AS answers_count,
+        COALESCE(vote_counts.votes_count, 0) AS votes_count,
+        COALESCE(question_tags.tags, ARRAY[]::varchar[]) AS tags
       FROM questions q
-      LEFT JOIN users u ON q.user_id = u.id
-      LEFT JOIN answers a ON a.question_id = q.id
-      LEFT JOIN votes v ON v.answer_id = a.id
-      LEFT JOIN question_tags qt ON qt.question_id = q.id
-      LEFT JOIN tags t ON t.id = qt.tag_id
-      WHERE q.user_id = $1
-      GROUP BY q.id, u.name, u.avatar_url
+      LEFT JOIN users u ON q.author_id = u.id
+      
+      -- Get answers count separately
+      LEFT JOIN (
+        SELECT question_id, COUNT(*) as answers_count
+        FROM answers
+        GROUP BY question_id
+      ) answer_counts ON answer_counts.question_id = q.id
+      
+      -- Get votes count separately  
+      LEFT JOIN (
+        SELECT a.question_id, 
+               SUM(CASE 
+                 WHEN v.vote_type = 'upvote' THEN 1 
+                 WHEN v.vote_type = 'downvote' THEN -1 
+                 ELSE 0 
+               END) as votes_count
+        FROM answers a
+        LEFT JOIN votes v ON v.answer_id = a.id
+        GROUP BY a.question_id
+      ) vote_counts ON vote_counts.question_id = q.id
+      
+      -- Get tags separately
+      LEFT JOIN (
+        SELECT qt.question_id, 
+               ARRAY_AGG(DISTINCT t.name) as tags
+        FROM question_tags qt
+        LEFT JOIN tags t ON t.id = qt.tag_id
+        GROUP BY qt.question_id
+      ) question_tags ON question_tags.question_id = q.id
+      
+      WHERE q.author_id = $1
       ORDER BY q.created_at DESC
     `, [userId]);
     
+    console.log('✅ Found questions:', questions.rows.length);
+    
     res.status(200).json(questions.rows);
   } catch (err) {
+    console.error('❌ Error in getUserQuestions:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// 🆕 Get user's answers with question info
+// Get user's answers with question info
 export const getUserAnswers = async (req, res) => {
   try {
     const { userId } = req.params;
+    
+    // console.log('🔍 getUserAnswers for user:', userId);
     
     const answers = await pool.query(`
       SELECT 
@@ -176,26 +205,34 @@ export const getUserAnswers = async (req, res) => {
         u.name AS author_name,
         u.avatar_url AS avatar_url,
         q.title AS question_title,
-        COALESCE(SUM(CASE 
-          WHEN v.vote_type = 'upvote' THEN 1 
-          WHEN v.vote_type = 'downvote' THEN -1 
-          ELSE 0 END), 0) AS votes_count
+        COALESCE(vote_counts.votes_count, 0) AS votes_count
       FROM answers a
       LEFT JOIN users u ON a.user_id = u.id
       LEFT JOIN questions q ON a.question_id = q.id
-      LEFT JOIN votes v ON v.answer_id = a.id
+      LEFT JOIN (
+        SELECT answer_id,
+               SUM(CASE 
+                 WHEN vote_type = 'upvote' THEN 1 
+                 WHEN vote_type = 'downvote' THEN -1 
+                 ELSE 0 
+               END) as votes_count
+        FROM votes
+        GROUP BY answer_id
+      ) vote_counts ON vote_counts.answer_id = a.id
       WHERE a.user_id = $1
-      GROUP BY a.id, u.name, u.avatar_url, q.title
       ORDER BY a.created_at DESC
     `, [userId]);
     
+    // console.log('✅ Found answers:', answers.rows.length);
+    
     res.status(200).json(answers.rows);
   } catch (err) {
+    console.error('❌ Error in getUserAnswers:', err);
     res.status(500).json({ message: 'Server error' });
   }
 };
 
-// 🆕 Get user stats
+//  Get user stats
 export const getUserStats = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -203,11 +240,11 @@ export const getUserStats = async (req, res) => {
     // Get questions count and total views
     const questionsResult = await pool.query(
       `SELECT COUNT(*) as count, COALESCE(SUM(views_count), 0) as total_views 
-       FROM questions WHERE user_id = $1`,
+       FROM questions WHERE author_id = $1`,
       [userId]
     );
     
-    // ✅ FIXED: Use votes table instead of votes_count column
+    // Use votes table instead of votes_count column
     const answersResult = await pool.query(
       `SELECT 
          COUNT(*) as count,
@@ -217,7 +254,7 @@ export const getUserStats = async (req, res) => {
       [userId]
     );
 
-    // ✅ FIXED: Calculate total votes from votes table
+    //  Calculate total votes from votes table
     const votesResult = await pool.query(
       `SELECT 
          COALESCE(SUM(
@@ -241,7 +278,7 @@ export const getUserStats = async (req, res) => {
       acceptedAnswers: parseInt(answersResult.rows[0].accepted_count)
     };
 
-    console.log('📊 User stats:', stats); // Debug log
+    // console.log('📊 User stats:', stats); // Debug log
 
     res.status(200).json(stats);
   } catch (err) {
@@ -294,5 +331,102 @@ export const getUsers = async (req, res) => {
     res.status(200).json(users);
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+// Add to userController.js
+export const checkUserData = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // console.log('🔍 Checking user data for:', userId);
+    
+    // 1. Check if user exists
+    const userResult = await pool.query(
+      'SELECT id, name, email, created_at FROM users WHERE id = $1',
+      [userId]
+    );
+    
+    if (userResult.rows.length === 0) {
+      return res.json({
+        userExists: false,
+        message: 'User not found in database'
+      });
+    }
+    
+    const user = userResult.rows[0];
+    
+    // 2. Check user's questions
+    const questionsResult = await pool.query(
+      'SELECT id, title, author_id, created_at FROM questions WHERE author_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
+    
+    // 3. Check user's answers
+    const answersResult = await pool.query(
+      'SELECT id, question_id, body, user_id, is_accepted, created_at FROM answers WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
+    
+    // 4. Also check with user_id column (just in case)
+    const questionsWithUserIdResult = await pool.query(
+      'SELECT id, title, user_id, created_at FROM questions WHERE user_id = $1 ORDER BY created_at DESC',
+      [userId]
+    );
+    
+    res.json({
+      userExists: true,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        joined: user.created_at
+      },
+      questions: {
+        usingAuthorId: {
+          count: questionsResult.rows.length,
+          data: questionsResult.rows.map(q => ({
+            id: q.id,
+            title: q.title,
+            author_id: q.author_id,
+            created: q.created_at
+          }))
+        },
+        usingUserId: {
+          count: questionsWithUserIdResult.rows.length,
+          data: questionsWithUserIdResult.rows.map(q => ({
+            id: q.id,
+            title: q.title,
+            user_id: q.user_id,
+            created: q.created_at
+          }))
+        }
+      },
+      answers: {
+        count: answersResult.rows.length,
+        data: answersResult.rows.map(a => ({
+          id: a.id,
+          question_id: a.question_id,
+          body_preview: a.body ? a.body.substring(0, 50) + '...' : null,
+          user_id: a.user_id,
+          is_accepted: a.is_accepted,
+          created: a.created_at
+        }))
+      },
+      summary: {
+        userFound: true,
+        hasQuestions: questionsResult.rows.length > 0,
+        hasAnswers: answersResult.rows.length > 0,
+        totalContent: questionsResult.rows.length + answersResult.rows.length
+      }
+    });
+    
+  } catch (err) {
+    console.error('Check user data error:', err);
+    res.status(500).json({ 
+      error: err.message,
+      queryError: true
+    });
   }
 };

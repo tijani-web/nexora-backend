@@ -11,7 +11,7 @@ export const searchAll = async (req, res) => {
       });
     }
 
-    console.log('🔍 Searching for:', query);
+    console.log(' Searching for:', query);
 
     // ✅ SIMPLE SEARCH: Questions with ILIKE
     const questionsResult = await pool.query(`

@@ -44,7 +44,7 @@ router.get('/:identifier', getQuestionByIdOrSlug);
 router.post('/:identifier/views', async (req, res) => {
   try {
     const { identifier } = req.params;
-    console.log('📊 Incrementing views for question:', identifier);
+    // console.log('📊 Incrementing views for question:', identifier);
     
     let questionId;
     
@@ -72,7 +72,7 @@ router.post('/:identifier/views', async (req, res) => {
       [questionId]
     );
     
-    console.log('✅ View counted for question:', identifier);
+    // console.log('✅ View counted for question:', identifier);
     res.status(200).json({ message: 'View counted' });
   } catch (error) {
     console.error('❌ View count error:', error);
